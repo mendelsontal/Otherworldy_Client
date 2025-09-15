@@ -1,9 +1,9 @@
 # client/config.py
 
-SCREEN_WIDTH = 1024
-SCREEN_HEIGHT = 768
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
 
-MENU_OPTIONS = ["Log In", "Register", "Settings", "Exit"]
+MENU_OPTIONS = ["Start", "Settings", "Exit"]
 
 FPS = 60
 FONT_NAME = "Segoe UI"

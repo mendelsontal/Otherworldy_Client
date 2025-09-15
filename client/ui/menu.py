@@ -33,7 +33,7 @@ class Menu:
                         self.selected = (self.selected + 1) % len(self.options)
                     elif event.key == pygame.K_RETURN:
                         option = self.options[self.selected]
-                        if option == "Log In":
+                        if option == "Start":
                             login_screen = Login(self.screen)
                             login_screen.run()
                         elif option == "Register":
