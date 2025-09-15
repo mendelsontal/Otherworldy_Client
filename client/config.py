@@ -1,7 +1,7 @@
 # client/config.py
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1024
+SCREEN_HEIGHT = 768
 
 MENU_OPTIONS = ["Start", "Settings", "Exit"]
 

@@ -10,6 +10,10 @@ class Login:
         self.base_img = pygame.image.load("client/data/assets/images/login_window.png").convert_alpha()
         self.mask_img = pygame.image.load("client/data/assets/images/login_window_mask.png").convert()
 
+        # Load background and scale to screen size
+        self.bg_img = pygame.image.load("client/data/assets/images/menu_bg.png").convert_alpha()
+        self.bg_img = pygame.transform.scale(self.bg_img, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+
         self.base_w, self.base_h = self.base_img.get_size()
         scale_ratio = config.SCREEN_HEIGHT * 0.7 / self.base_h
         self.scaled_w = int(self.base_w * scale_ratio)
@@ -59,7 +63,7 @@ class Login:
         return pygame.Rect(min(xs), min(ys), max(xs)-min(xs), max(ys)-min(ys))
 
     def draw(self):
-        self.screen.fill((30, 30, 30))
+        self.screen.blit(self.bg_img, (0, 0))
         self.screen.blit(self.window_img, self.window_rect)
 
         # Draw highlight overlay for active field
