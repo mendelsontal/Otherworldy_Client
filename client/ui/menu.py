@@ -1,3 +1,4 @@
+# client/ui/menu.py
 import pygame
 from client import config
 from client.ui.login import Login
@@ -35,6 +36,12 @@ class Menu:
         pygame.display.flip()
 
     def run(self):
+        """
+        Return values:
+          - "start"    -> user chose Start
+          - "settings" -> user chose Settings
+          - "exit"     -> user chose Exit (or closed window)
+        """
         clock = pygame.time.Clock()
         running = True
 
@@ -43,7 +50,7 @@ class Menu:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    return "exit"
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP:
                         self.selected = (self.selected - 1) % len(self.options)
@@ -52,16 +59,12 @@ class Menu:
                     elif event.key == pygame.K_RETURN:
                         option = self.options[self.selected]
                         if option == "Start":
-                            login_screen = Login(self.screen)
-                            login_screen.run()
+                            return "start"
                         elif option == "Settings":
-                            settings = SettingsMenu(self.screen)
-                            settings.run()
-                            # Refresh screen, font, and background after changing resolution
-                            self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
-                            self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04)))
-                            self.bg_img = pygame.transform.scale(self.bg_img_orig, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+                            return "settings"
                         elif option == "Exit":
-                            running = False
+                            return "exit"
 
             clock.tick(config.FPS)
+
+        return None

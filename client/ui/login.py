@@ -1,8 +1,11 @@
+# client/ui/login.py
 import pygame
 from client import config
 import time
+import threading
 from network.client import GameClient
 from client.ui.character_selection import CharacterSelection
+from client.ui.character_creation import CharacterCreation
 
 class Login:
     def __init__(self, screen):
@@ -45,6 +48,8 @@ class Login:
         self.active_field = self.focus_order[self.focus_index]
 
         # State
+        self.logged_in = False
+        self.characters = []
         self.username_text = ""
         self.password_text = ""
         self.font = pygame.font.SysFont(config.FONT_NAME, 24)
@@ -53,9 +58,24 @@ class Login:
         self.cursor_visible = True
         self.last_blink = time.time()
 
+        # Networking client and synchronization primitives
         self.client = GameClient("127.0.0.1", 5000)
-        self.client.on_message = self.handle_server_message
+        self.server_event = threading.Event()
+        self.server_action = None
+        self.server_payload = None
+
+        # assign callback
+        self.client.on_message = self._on_server_message
         self.client.connect()
+
+    def _on_server_message(self, message: dict):
+        """
+        This runs on the client's network thread. Keep it minimal: set an
+        event + payload. UI actions happen on the Login.run() main thread.
+        """
+        self.server_action = message.get("action")
+        self.server_payload = message
+        self.server_event.set()
 
     def _find_color_bounds(self, color):
         pixels = pygame.PixelArray(self.mask_img)
@@ -112,46 +132,68 @@ class Login:
             print("Password must be at least 6 characters")
         else:
             print("Login clicked:", self.username_text, self.password_text)
+            # send login request; server should reply with "character_list" or "login_failed"
             self.client.login(self.username_text.strip(), self.password_text.strip())
-    
-    def handle_server_message(self, message):
-        status = message.get("status")
-        msg = message.get("message")
-        print(f"[Server] {status}: {msg}")
-
-        if status == "login_success":
-            # msg could contain the user's characters list from the server
-            characters = message.get("characters", [])
-
-            if not characters:
-                print("No characters found, you may create one here...")
-                # you could call a create_character screen instead
-                return
-
-            # Open character selection
-            selection_screen = CharacterSelection(self.screen, characters)
-            selected_char_data = selection_screen.run()
-
-            if selected_char_data:
-                print("TODO")
 
     def run(self):
+        """
+        Returns:
+          - None             -> user cancelled / pressed ESC / back to menu
+          - {"selected_character": {...}} -> the player selected a character and we can proceed
+        """
         clock = pygame.time.Clock()
         running = True
 
         while running:
             self.draw()
 
+            # If server event set, handle it on the main thread
+            if self.server_event.is_set():
+                action = self.server_action
+                payload = self.server_payload or {}
+                # clear event for next
+                self.server_event.clear()
+                self.server_action = None
+                self.server_payload = None
+
+                if action == "login_failed":
+                    reason = payload.get("reason", "Unknown")
+                    print("Login failed:", reason)
+                elif action == "character_list":
+                    characters = payload.get("characters", [])
+                    # if no characters -> open creation flow
+                    if not characters:
+                        print("No characters found, opening creation screen...")
+                        created = CharacterCreation(self.screen, self.client).run()
+                        if created:
+                            characters = [created]
+                        else:
+                            # user cancelled creation -> continue login screen
+                            continue
+
+                    # Now open selection (characters is non-empty)
+                    selected = CharacterSelection(self.screen, characters).run()
+                    if selected:
+                        # return selected character to caller
+                        return {"selected_character": selected}
+                    else:
+                        # selection cancelled — continue login screen
+                        continue
+
+                # other actions may be ignored / printed
+                else:
+                    # you might want to handle "character_created" here if desired
+                    # but CharacterCreation expects to temporarily override on_message
+                    pass
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
-
+                    return None
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        running = False
+                        return None
 
                     elif event.key == pygame.K_TAB:
-                        # Only switch between username/password
                         if self.active_field in ["username", "password"]:
                             self.focus_index = (self.focus_index + 1) % 2
                             self.active_field = self.focus_order[self.focus_index]
@@ -184,19 +226,6 @@ class Login:
                             elif self.active_field == "password" and len(self.password_text) < 22:
                                 self.password_text += char
 
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    mx, my = event.pos
-                    if self.window_rect.collidepoint(mx, my):
-                        local_x = mx - self.window_rect.x
-                        local_y = my - self.window_rect.y
-                        color = self.mask_img.get_at((local_x, local_y))[:3]
-                        action = self.color_map.get(color)
-                        if action:
-                            self.active_field = action
-                            self.focus_index = self.focus_order.index(action)
-                            if action == "login_btn":
-                                self.attempt_login()
-                            elif action == "signup_btn":
-                                print("Sign Up clicked")
-
             clock.tick(config.FPS)
+
+        return None

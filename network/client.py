@@ -44,20 +44,28 @@ class GameClient:
                 self.running = False
                 break
 
-    def send(self, message: dict):
+    def send_json(self, data: dict):
+        """Helper to send JSON messages to the server."""
+        try:
+            self.send(json.dumps(data))   # always dumps here
+        except Exception as e:
+            print(f"[!] Failed to send JSON: {e}")
+
+    def send(self, message: str):
+        """Send a raw string message to the server (expects string)."""
         if not self.sock:
             raise RuntimeError("Client not connected")
         try:
-            self.sock.sendall((json.dumps(message) + "\n").encode("utf-8"))
+            self.sock.sendall((message + "\n").encode("utf-8"))
         except Exception as e:
             print(f"[!] Failed to send message: {e}")
 
     def login(self, username: str, password: str):
-        self.send({
+        self.send_json({
             "action": "login",
             "data": {"username": username, "password": password}
         })
-
+    
     def close(self):
         self.running = False
         if self.sock:
