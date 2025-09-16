@@ -1,6 +1,8 @@
 import pygame
 from client import config
 import time
+from network.client import GameClient
+from client.ui.character_selection import CharacterSelection
 
 class Login:
     def __init__(self, screen):
@@ -50,6 +52,10 @@ class Login:
         # Cursor blink
         self.cursor_visible = True
         self.last_blink = time.time()
+
+        self.client = GameClient("127.0.0.1", 5000)
+        self.client.on_message = self.handle_server_message
+        self.client.connect()
 
     def _find_color_bounds(self, color):
         pixels = pygame.PixelArray(self.mask_img)
@@ -106,6 +112,28 @@ class Login:
             print("Password must be at least 6 characters")
         else:
             print("Login clicked:", self.username_text, self.password_text)
+            self.client.login(self.username_text.strip(), self.password_text.strip())
+    
+    def handle_server_message(self, message):
+        status = message.get("status")
+        msg = message.get("message")
+        print(f"[Server] {status}: {msg}")
+
+        if status == "login_success":
+            # msg could contain the user's characters list from the server
+            characters = message.get("characters", [])
+
+            if not characters:
+                print("No characters found, you may create one here...")
+                # you could call a create_character screen instead
+                return
+
+            # Open character selection
+            selection_screen = CharacterSelection(self.screen, characters)
+            selected_char_data = selection_screen.run()
+
+            if selected_char_data:
+                print("TODO")
 
     def run(self):
         clock = pygame.time.Clock()
