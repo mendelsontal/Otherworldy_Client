@@ -3,6 +3,7 @@ import pygame
 from client import config
 import time
 import threading
+import os
 from network.client import GameClient
 from client.ui.character_selection import CharacterSelection
 from client.ui.character_creation import CharacterCreation
@@ -10,6 +11,9 @@ from client.ui.character_creation import CharacterCreation
 class Login:
     def __init__(self, screen):
         self.screen = screen
+        # Load server ip & port
+        self.server_ip = config.SERVER_IP
+        self.server_port = config.SERVER_PORT
 
         # Load window & mask
         self.base_img = pygame.image.load("client/data/assets/images/login_window.png").convert_alpha()
@@ -50,7 +54,7 @@ class Login:
         # State
         self.logged_in = False
         self.characters = []
-        self.username_text = ""
+        self.username_text = self._load_username_from_file()
         self.password_text = ""
         self.font = pygame.font.SysFont(config.FONT_NAME, 24)
 
@@ -59,7 +63,7 @@ class Login:
         self.last_blink = time.time()
 
         # Networking client and synchronization primitives
-        self.client = GameClient("127.0.0.1", 5000)
+        self.client = GameClient(self.server_ip, int(self.server_port))
         self.server_event = threading.Event()
         self.server_action = None
         self.server_payload = None
@@ -68,11 +72,25 @@ class Login:
         self.client.on_message = self._on_server_message
         self.client.connect()
 
+    # ---------------- Persistence Methods ----------------
+    def _save_username_to_file(self, username):
+        try:
+            os.makedirs("client/data", exist_ok=True)
+            with open("client/data/saved_username.txt", "w", encoding="utf-8") as f:
+                f.write(username)
+        except Exception as e:
+            print("Failed to save username:", e)
+
+    def _load_username_from_file(self):
+        try:
+            with open("client/data/saved_username.txt", "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            return ""
+
+    # ---------------- Network & UI Methods ----------------
     def _on_server_message(self, message: dict):
-        """
-        This runs on the client's network thread. Keep it minimal: set an
-        event + payload. UI actions happen on the Login.run() main thread.
-        """
+        """This runs on the client's network thread. Keep it minimal: set an event + payload."""
         self.server_action = message.get("action")
         self.server_payload = message
         self.server_event.set()
@@ -132,26 +150,20 @@ class Login:
             print("Password must be at least 6 characters")
         else:
             print("Login clicked:", self.username_text, self.password_text)
-            # send login request; server should reply with "character_list" or "login_failed"
             self.client.login(self.username_text.strip(), self.password_text.strip())
 
+    # ---------------- Main Loop ----------------
     def run(self):
-        """
-        Returns:
-          - None             -> user cancelled / pressed ESC / back to menu
-          - {"selected_character": {...}} -> the player selected a character and we can proceed
-        """
         clock = pygame.time.Clock()
         running = True
 
         while running:
             self.draw()
 
-            # If server event set, handle it on the main thread
+            # Handle server responses
             if self.server_event.is_set():
                 action = self.server_action
                 payload = self.server_payload or {}
-                # clear event for next
                 self.server_event.clear()
                 self.server_action = None
                 self.server_payload = None
@@ -160,64 +172,56 @@ class Login:
                     reason = payload.get("reason", "Unknown")
                     print("Login failed:", reason)
                 elif action == "character_list":
-                    characters = payload.get("characters", [])
-                    # if no characters -> open creation flow
-                    if not characters:
-                        print("No characters found, opening creation screen...")
+                    self.characters = payload.get("characters", [])  # <--- assign here
+                    self.logged_in = True
+
+                    # Save username to disk for future sessions
+                    self._save_username_to_file(self.username_text.strip())
+
+                    # If no characters, open creation screen
+                    if not self.characters:
                         created = CharacterCreation(self.screen, self.client).run()
                         if created:
-                            characters = [created]
+                            self.characters = [created]
                         else:
-                            # user cancelled creation -> continue login screen
                             continue
 
-                    # Now open selection (characters is non-empty)
-                    selected = CharacterSelection(self.screen, characters).run()
-                    if selected:
-                        # return selected character to caller
+                    # Open character selection
+                    selected = CharacterSelection(self.screen, self.characters).run()
+                    if selected == "menu":
+                        return "menu"
+                    elif selected:
                         return {"selected_character": selected}
                     else:
-                        # selection cancelled — continue login screen
                         continue
 
-                # other actions may be ignored / printed
-                else:
-                    # you might want to handle "character_created" here if desired
-                    # but CharacterCreation expects to temporarily override on_message
-                    pass
-
+            # Handle input events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return None
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         return None
-
                     elif event.key == pygame.K_TAB:
                         if self.active_field in ["username", "password"]:
                             self.focus_index = (self.focus_index + 1) % 2
                             self.active_field = self.focus_order[self.focus_index]
-
                     elif event.key == pygame.K_DOWN:
                         self.focus_index = (self.focus_index + 1) % len(self.focus_order)
                         self.active_field = self.focus_order[self.focus_index]
-
                     elif event.key == pygame.K_UP:
                         self.focus_index = (self.focus_index - 1) % len(self.focus_order)
                         self.active_field = self.focus_order[self.focus_index]
-
                     elif event.key == pygame.K_BACKSPACE:
                         if self.active_field == "username":
                             self.username_text = self.username_text[:-1]
                         elif self.active_field == "password":
                             self.password_text = self.password_text[:-1]
-
                     elif event.key == pygame.K_RETURN:
                         if self.active_field in ["username", "password", "login_btn"]:
                             self.attempt_login()
                         elif self.active_field == "signup_btn":
                             print("Sign Up clicked")
-
                     else:
                         char = event.unicode
                         if char.isprintable():
