@@ -1,4 +1,3 @@
-# client/ui/menu.py
 import pygame
 from client import config
 from client.ui.login import Login
@@ -17,12 +16,16 @@ class Menu:
         # Font size proportional to screen height
         self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04)))
 
+        # Store rectangles for mouse click and hover detection
+        self.option_rects = []
+
     def draw(self):
         # Draw background scaled to current screen size
         self.bg_img = pygame.transform.scale(self.bg_img_orig, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         self.screen.blit(self.bg_img, (0, 0))
 
-        # Draw options
+        # Draw options and store their rectangles
+        self.option_rects.clear()  # Clear previous rectangles
         center_x = config.SCREEN_WIDTH // 2
         center_y = config.SCREEN_HEIGHT // 2
         spacing = max(40, int(config.SCREEN_HEIGHT * 0.06))
@@ -32,21 +35,23 @@ class Menu:
             text_surface = self.font.render(option, True, color)
             rect = text_surface.get_rect(center=(center_x, center_y + i * spacing))
             self.screen.blit(text_surface, rect)
+            self.option_rects.append((option, rect))  # Store option and its rectangle
 
         pygame.display.flip()
 
     def run(self):
-        """
-        Return values:
-          - "start"    -> user chose Start
-          - "settings" -> user chose Settings
-          - "exit"     -> user chose Exit (or closed window)
-        """
         clock = pygame.time.Clock()
         running = True
 
         while running:
             self.draw()
+
+            # Check mouse position for hover selection
+            mouse_pos = pygame.mouse.get_pos()
+            for i, (_, rect) in enumerate(self.option_rects):
+                if rect.collidepoint(mouse_pos):
+                    self.selected = i
+                    break
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -64,6 +69,18 @@ class Menu:
                             return "settings"
                         elif option == "Exit":
                             return "exit"
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:  # Left mouse button
+                        mouse_pos = event.pos
+                        for i, (option, rect) in enumerate(self.option_rects):
+                            if rect.collidepoint(mouse_pos):
+                                self.selected = i  # Update selected option
+                                if option == "Start":
+                                    return "start"
+                                elif option == "Settings":
+                                    return "settings"
+                                elif option == "Exit":
+                                    return "exit"
 
             clock.tick(config.FPS)
 

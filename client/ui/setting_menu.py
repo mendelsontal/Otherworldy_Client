@@ -1,4 +1,3 @@
-# client/ui/settings_menu.py
 import os
 import pygame
 from client import config
@@ -15,7 +14,7 @@ class SettingsMenu:
         self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04)))
 
         # Main options
-        self.options = ["Resolution", "Sound", "Apply", "Return"]
+        self.options = ["Screen Mode", "Resolution", "Music", "Sound", "Apply Changes", "Restore Defaults", "Return to Title", "Quit"]
         self.selected_index = 0
 
         # Resolution choices
@@ -24,10 +23,10 @@ class SettingsMenu:
             (i for i, r in enumerate(self.resolutions) if r == (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)), 0
         )
 
-        self.dropdown_open = False
-        self.dropdown_selected = self.current_resolution_index
-    
-    def center_window(width, height):
+        # Store rectangles for mouse interaction
+        self.option_rects = []
+
+    def center_window(self, width, height):
         os.environ['SDL_VIDEO_CENTERED'] = '1'
         pygame.display.set_mode((width, height))
 
@@ -44,42 +43,18 @@ class SettingsMenu:
         self.option_rects = []
 
         for i, option in enumerate(self.options):
-            text_surface = self.font.render(option, True, (255, 255, 255))
+            # Highlight selected option
+            color = (50, 150, 255) if i == self.selected_index else (255, 255, 255)
+            text_surface = self.font.render(option, True, color)
             rect = text_surface.get_rect(center=(center_x, center_y + i * spacing))
-
-            # Highlight selected option (if dropdown closed)
-            if i == self.selected_index and not self.dropdown_open:
-                s = pygame.Surface((rect.w, rect.h), pygame.SRCALPHA)
-                s.fill((255, 215, 0, 30))  # semi-transparent highlight
-                self.screen.blit(s, rect.topleft)
-
             self.screen.blit(text_surface, rect)
-            self.option_rects.append(rect)
+            self.option_rects.append((option, rect))
 
             # Draw current resolution next to "Resolution"
             if option == "Resolution":
                 res_text = f"{self.resolutions[self.current_resolution_index][0]}x{self.resolutions[self.current_resolution_index][1]}"
                 res_surface = self.font.render(res_text, True, (200, 200, 0))
                 self.screen.blit(res_surface, (rect.right + 20, rect.y))
-
-        # Draw dropdown if open
-        self.dropdown_rects = []
-        if self.dropdown_open:
-            dropdown_start_y = center_y + spacing  # just below Resolution option
-            dropdown_spacing = max(30, int(config.SCREEN_HEIGHT * 0.04))
-
-            for i, res in enumerate(self.resolutions):
-                res_surface = self.font.render(f"{res[0]}x{res[1]}", True, (255, 255, 255))
-                rect = res_surface.get_rect(center=(center_x, dropdown_start_y + i * dropdown_spacing))
-
-                # Highlight selected dropdown item
-                if i == self.dropdown_selected:
-                    s = pygame.Surface((rect.w, rect.h), pygame.SRCALPHA)
-                    s.fill((255, 215, 0, 50))
-                    self.screen.blit(s, rect.topleft)
-
-                self.screen.blit(res_surface, rect)
-                self.dropdown_rects.append(rect)
 
         pygame.display.flip()
 
@@ -121,7 +96,7 @@ class SettingsMenu:
 
         # Update font size
         self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04)))
-        
+
         print(f"Applied new resolution: {new_width}x{new_height}")
         if hasattr(self, "window_rect"):
             self.window_rect.center = (new_width // 2, new_height // 2)
@@ -135,65 +110,55 @@ class SettingsMenu:
 
         while running:
             self.draw()
-            mx, my = pygame.mouse.get_pos()
+
+            # Check mouse position for hover selection
+            mouse_pos = pygame.mouse.get_pos()
+            for i, (_, rect) in enumerate(self.option_rects):
+                if rect.collidepoint(mouse_pos):
+                    self.selected_index = i
+                    break
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         running = False
                     elif event.key == pygame.K_UP:
-                        if self.dropdown_open:
-                            self.dropdown_selected = (self.dropdown_selected - 1) % len(self.resolutions)
-                        else:
-                            self.selected_index = (self.selected_index - 1) % len(self.options)
+                        self.selected_index = (self.selected_index - 1) % len(self.options)
                     elif event.key == pygame.K_DOWN:
-                        if self.dropdown_open:
-                            self.dropdown_selected = (self.dropdown_selected + 1) % len(self.resolutions)
-                        else:
-                            self.selected_index = (self.selected_index + 1) % len(self.options)
+                        self.selected_index = (self.selected_index + 1) % len(self.options)
+                    elif event.key == pygame.K_LEFT:
+                        if self.options[self.selected_index] == "Resolution":
+                            self.current_resolution_index = (self.current_resolution_index - 1) % len(self.resolutions)
+                    elif event.key == pygame.K_RIGHT:
+                        if self.options[self.selected_index] == "Resolution":
+                            self.current_resolution_index = (self.current_resolution_index + 1) % len(self.resolutions)
                     elif event.key == pygame.K_RETURN:
-                        if self.dropdown_open:
-                            self.current_resolution_index = self.dropdown_selected
-                            self.dropdown_open = False
-                        else:
-                            selected_option = self.options[self.selected_index]
-                            if selected_option == "Resolution":
-                                self.dropdown_open = True
-                                self.dropdown_selected = self.current_resolution_index
-                            elif selected_option == "Return":
-                                running = False
-                            elif selected_option == "Apply":
-                                self.apply_resolution()
-
-                elif event.type == pygame.MOUSEMOTION:
-                    if not self.dropdown_open:
-                        for i, rect in enumerate(self.option_rects):
-                            if rect.collidepoint(mx, my):
-                                self.selected_index = i
-                    else:
-                        for i, rect in enumerate(self.dropdown_rects):
-                            if rect.collidepoint(mx, my):
-                                self.dropdown_selected = i
-
+                        selected_option = self.options[self.selected_index]
+                        if selected_option == "Apply Changes":
+                            self.apply_resolution()
+                        elif selected_option == "Return to Title":
+                            running = False
+                        elif selected_option == "Quit":
+                            return "exit"
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if not self.dropdown_open:
-                        for i, rect in enumerate(self.option_rects):
-                            if rect.collidepoint(mx, my):
-                                self.selected_index = i
-                                selected_option = self.options[i]
-                                if selected_option == "Resolution":
-                                    self.dropdown_open = True
-                                    self.dropdown_selected = self.current_resolution_index
-                                elif selected_option == "Return":
-                                    running = False
-                                elif selected_option == "Apply":
-                                    self.apply_resolution()
-                    else:
-                        for i, rect in enumerate(self.dropdown_rects):
-                            if rect.collidepoint(mx, my):
-                                self.current_resolution_index = i
-                                self.dropdown_open = False
+                    mouse_pos = event.pos
+                    for i, (option, rect) in enumerate(self.option_rects):
+                        if rect.collidepoint(mouse_pos):
+                            self.selected_index = i
+                            if option == "Resolution":
+                                if event.button == 1:  # Left click
+                                    self.current_resolution_index = (self.current_resolution_index + 1) % len(self.resolutions)
+                                elif event.button == 3:  # Right click
+                                    self.current_resolution_index = (self.current_resolution_index - 1) % len(self.resolutions)
+                            elif option == "Apply Changes":
+                                self.apply_resolution()
+                            elif option == "Return to Title":
+                                running = False
+                            elif option == "Quit":
+                                return "exit"
 
+            clock.tick(config.FPS)
+
+        return "return"
