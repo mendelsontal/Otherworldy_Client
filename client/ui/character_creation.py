@@ -1,6 +1,7 @@
 import pygame
 import re
 import time
+from client import config
 
 class CharacterCreation:
     NAME_REGEX = re.compile(r'^[A-Za-z0-9]{1,12}$')  # letters & numbers only, max 12
@@ -82,7 +83,7 @@ class CharacterCreation:
                 self.client.on_message = original_callback  # restore original callback
                 return self.created_character
 
-            clock.tick(60)
+            clock.tick(config.FPS)
 
         self.client.on_message = original_callback
         return None

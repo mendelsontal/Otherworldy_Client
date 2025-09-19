@@ -211,7 +211,7 @@ class Login:
                             continue
 
                     # Open character selection
-                    selected = CharacterSelection(self.screen, self.characters).run()
+                    selected = CharacterSelection(self.screen, self.characters, self.client).run()
                     if selected == "menu":
                         return "menu"
                     elif selected:

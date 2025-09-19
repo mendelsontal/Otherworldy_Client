@@ -1,10 +1,12 @@
 import pygame
 from client import config
+from client.ui.character_creation import CharacterCreation
 
 class CharacterSelection:
-    def __init__(self, screen, characters):
+    def __init__(self, screen, characters, client):
         self.screen = screen
         self.characters = characters  # list of dicts (max 6)
+        self.client = client
         self.selected_slot = None  # index of chosen slot
 
         # Load images
@@ -131,12 +133,31 @@ class CharacterSelection:
         if field.startswith("slot"):
             index = int(field.replace("slot", ""))
             self.selected_slot = index
+            # If empty slot → open character creation
+            if index >= len(self.characters):  
+                creator = CharacterCreation(self.screen, self.client)
+                new_char = creator.run()
+                if new_char:  
+                    # Append new character to list
+                    self.characters.append(new_char)
+                    self.selected_slot = index
             return None
         elif field == "start_btn":
-            if self.selected_slot is not None and self.selected_slot < len(self.characters):
-                return self.characters[self.selected_slot]
+            if self.selected_slot is not None:
+                if self.selected_slot < len(self.characters):
+                    # Valid character
+                    return self.characters[self.selected_slot]
+                else:
+                    # Empty slot → open character creation
+                    creator = CharacterCreation(self.screen, self.client)
+                    new_char = creator.run()
+                    if new_char:
+                        self.characters.append(new_char)
+                        self.selected_slot = len(self.characters) - 1
+                        return new_char
             print("No character selected!")
             return None
+
         elif field == "return_btn":
             return "menu"
 
@@ -175,4 +196,4 @@ class CharacterSelection:
                         if result is not None:
                             return result
 
-            clock.tick(60)
+            clock.tick(config.FPS)
