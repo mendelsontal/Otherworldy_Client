@@ -12,6 +12,7 @@ class Menu:
         # Load background
         self.bg_img_orig = pygame.image.load("client/data/assets/images/menu_bg.png").convert_alpha()
         self.bg_img = pygame.transform.scale(self.bg_img_orig, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+        self.last_size = (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
         # Font size proportional to screen height
         self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04)))
@@ -21,7 +22,13 @@ class Menu:
 
     def draw(self):
         # Draw background scaled to current screen size
-        self.bg_img = pygame.transform.scale(self.bg_img_orig, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+        current_size = (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+        if current_size != self.last_size:
+            self.bg_img = pygame.transform.scale(self.bg_img_orig, current_size)
+            self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04)))
+            self.last_size = current_size
+
+            # Draw background scaled to current screen size
         self.screen.blit(self.bg_img, (0, 0))
 
         # Draw options and store their rectangles

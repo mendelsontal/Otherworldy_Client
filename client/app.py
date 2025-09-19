@@ -25,11 +25,16 @@ def main():
             break
 
         elif choice == "settings":
+            old_size = (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
             settings = SettingsMenu(screen)
             settings.run()
-            # Reapply screen size if changed
-            screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
-            login_screen = Login(screen)
+
+            new_size = (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+            if new_size != old_size:
+                screen = pygame.display.set_mode(new_size)
+                login_screen.screen = screen
+
 
         elif choice == "start":
             # If already logged in with characters, go straight to character selection
