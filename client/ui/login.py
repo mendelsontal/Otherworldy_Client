@@ -152,6 +152,30 @@ class Login:
             print("Login clicked:", self.username_text, self.password_text)
             self.client.login(self.username_text.strip(), self.password_text.strip())
 
+    def rescale_ui(self):
+        # Rescale background
+        self.bg_img = pygame.image.load("client/data/assets/images/menu_bg.png").convert_alpha()
+        self.bg_img = pygame.transform.scale(self.bg_img, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+
+        # Recalculate scaling for window and mask
+        scale_ratio = config.SCREEN_HEIGHT * 0.7 / self.base_h
+        self.scaled_w = int(self.base_w * scale_ratio)
+        self.scaled_h = int(self.base_h * scale_ratio)
+        self.window_img = pygame.transform.scale(self.base_img, (self.scaled_w, self.scaled_h))
+        self.mask_img = pygame.transform.scale(self.mask_img, (self.scaled_w, self.scaled_h))
+        self.window_rect = self.window_img.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2))
+
+        # Recalculate field rects
+        self.fields_rects.clear()
+        for color, name in self.color_map.items():
+            rect = self._find_color_bounds(color)
+            if rect:
+                self.fields_rects[name] = rect.move(self.window_rect.topleft)
+
+        # Update font
+        self.font = pygame.font.SysFont(config.FONT_NAME, 24)
+
+
     # ---------------- Main Loop ----------------
     def run(self):
         clock = pygame.time.Clock()
