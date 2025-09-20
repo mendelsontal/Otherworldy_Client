@@ -20,6 +20,10 @@ class GameClient:
         self.recv_thread.start()
         print(f"[+] Connected to server {self.host}:{self.port}")
 
+    @property
+    def connected(self):
+        return self.sock is not None and self.running
+
     def _receive_loop(self):
         buffer = ""
         while self.running:
@@ -71,3 +75,12 @@ class GameClient:
         if self.sock:
             self.sock.close()
             self.sock = None
+
+    def delete_character(self, char_id):
+        if not self.connected:
+            self.connect()  # try to reconnect
+        self.send_json({
+            "action": "delete_character",
+            "char_id": char_id
+        })
+

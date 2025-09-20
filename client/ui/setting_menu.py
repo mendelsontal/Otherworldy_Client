@@ -15,11 +15,11 @@ class SettingsMenu:
         self.font = pygame.font.Font(font_path, max(20, int(config.SCREEN_HEIGHT * 0.04)))
 
         # Main options
-        self.options = ["Screen Mode", "Resolution", "Music", "Sound", "Restore Defaults", "Return to Title", "Apply Changes"]
+        self.options = ["Screen Mode", "Resolution", "Music", "Sound", "Return to Title", "Apply Changes"]
         self.selected_index = 0
 
         # Resolution choices
-        self.resolutions = [(800, 600), (1024, 768), (1280, 720), (1920, 1080)]
+        self.resolutions = [(800, 600), (1024, 768), (1280, 720), (1920, 1080), (2560, 1440)]
         self.current_resolution_index = next(
             (i for i, r in enumerate(self.resolutions) if r == (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)), 0
         )
@@ -51,7 +51,7 @@ class SettingsMenu:
 
         # --- Boxed semi-transparent panel ---
         panel_width = int(config.SCREEN_WIDTH * 0.6)
-        panel_height = menu_height + 40                # Add padding top/bottom
+        panel_height = menu_height + 120                # Add padding top/bottom
         overlay = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
         pygame.draw.rect(
         overlay,
@@ -71,10 +71,18 @@ class SettingsMenu:
             # Highlight selected option
             color = (50, 150, 255) if i == self.selected_index else (255, 255, 255)
             text_surface = self.font.render(option, True, color)
-            start_y = int(config.SCREEN_HEIGHT * 0.3)
+
+            # Compute y position
+            extra_spacing = 0
+            if option == "Apply Changes":
+                extra_spacing = 30
+
+            y_pos = start_y + i * spacing + extra_spacing
+            
             margin_x = int(config.SCREEN_WIDTH * 0.25)
+
             panel_right_x = int(config.SCREEN_WIDTH * 0.78)
-            rect = text_surface.get_rect(midleft=(margin_x, start_y + i * spacing))
+            rect = text_surface.get_rect(midleft=(margin_x, y_pos))
             self.screen.blit(text_surface, rect)
             self.option_rects.append((option, rect))
 

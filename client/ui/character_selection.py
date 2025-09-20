@@ -1,4 +1,5 @@
 import pygame
+import json
 from client import config
 from client.ui.character_creation import CharacterCreation
 
@@ -25,13 +26,14 @@ class CharacterSelection:
             (0, 128, 0): "start_btn",
             (176, 224, 230): "slot",
             (255, 0, 0): "return_btn",
+            (0, 0, 255): "delete_btn",
         }
 
         # Build masks for clickable/highlightable regions
         self.masks = self._build_masks()
 
         # Focus order
-        self.focus_order = [f"slot{i}" for i in range(len(self.masks['slots']))] + ["start_btn", "return_btn"]
+        self.focus_order = [f"slot{i}" for i in range(len(self.masks['slots']))] + ["start_btn", "delete_btn", "return_btn"]
         self.active_field = self.focus_order[0]
 
     def _build_masks(self):
@@ -123,11 +125,26 @@ class CharacterSelection:
         for i, mask in enumerate(self.masks["slots"]):
             if mask.get_at((x, y)):
                 return f"slot{i}"
-        for name in ("start_btn", "return_btn"):
+        for name in ("start_btn", "delete_btn", "return_btn"):
             mask = self.masks.get(name)
             if mask.get_at((x, y)):
                 return name
         return None
+    
+    def _confirm_delete(self, name):
+        font = pygame.font.SysFont(config.FONT_NAME, 24)
+        text = font.render(f"Delete {name}? Y/N", True, (255, 0, 0))
+        self.screen.blit(text, (config.SCREEN_WIDTH//2 - text.get_width()//2,
+                                config.SCREEN_HEIGHT//2 - text.get_height()//2))
+        pygame.display.flip()
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_y:
+                        return True
+                    elif event.key == pygame.K_n:
+                        return False
 
     def _activate_field(self, field):
         if field.startswith("slot"):
@@ -160,6 +177,16 @@ class CharacterSelection:
 
         elif field == "return_btn":
             return "menu"
+        
+        elif field == "delete_btn":
+            if self.selected_slot is not None and self.selected_slot < len(self.characters):
+                char = self.characters[self.selected_slot]
+                confirm = self._confirm_delete(char["name"])  # optional popup confirm
+                if confirm:
+                    self.client.delete_character(char["id"])  # call server
+                    self.characters.pop(self.selected_slot)
+                    self.selected_slot = None
+            return None
 
     def run(self):
         clock = pygame.time.Clock()
@@ -169,6 +196,19 @@ class CharacterSelection:
                 if event.type == pygame.QUIT:
                     return None
                 elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_DELETE and self.selected_slot is not None:
+                        if self.selected_slot < len(self.characters):
+                            char = self.characters[self.selected_slot]
+                            self.client.send(json.dumps({
+                                "action": "delete_character",
+                                "char_id": char["id"]
+                            }))
+                            # Wait for server response (simplified)
+                            response = self.client.recv()
+                            if response.get("action") == "delete_character_ok":
+                                print(f"Deleted character {char['name']}")
+                                del self.characters[self.selected_slot]
+                                self.selected_slot = None
                     if event.key in (pygame.K_DOWN, pygame.K_TAB):
                         idx = self.focus_order.index(self.active_field)
                         self.active_field = self.focus_order[(idx + 1) % len(self.focus_order)]

@@ -40,6 +40,8 @@ class Login:
         }
 
         # Extract bounding boxes for all fields/buttons in screen space
+        self.last_mouse_pos = pygame.mouse.get_pos() # Track last mouse pos
+        self.option_rects = []
         self.fields_rects = {}
         for color, name in self.color_map.items():
             rect = self._find_color_bounds(color)
@@ -184,6 +186,15 @@ class Login:
         while running:
             self.draw()
 
+            # Check mouse position for hover selection
+            mouse_pos = pygame.mouse.get_pos()
+            if mouse_pos != self.last_mouse_pos:
+                for i, (_, rect) in enumerate(self.option_rects):
+                    if rect.collidepoint(mouse_pos):
+                        self.selected_index = i
+                        break
+                self.last_mouse_pos = mouse_pos
+
             # Handle server responses
             if self.server_event.is_set():
                 action = self.server_action
@@ -246,6 +257,7 @@ class Login:
                             self.attempt_login()
                         elif self.active_field == "signup_btn":
                             print("Sign Up clicked")
+
                     else:
                         char = event.unicode
                         if char.isprintable():
@@ -253,6 +265,16 @@ class Login:
                                 self.username_text += char
                             elif self.active_field == "password" and len(self.password_text) < 22:
                                 self.password_text += char
+                                
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    mouse_pos = event.pos
+                    for name, rect in self.fields_rects.items():
+                        if rect.collidepoint(mouse_pos):
+                            self.active_field = name
+                            if name == "login_btn":
+                                self.attempt_login()
+                            elif name == "signup_btn":
+                                print("Sign Up clicked")
 
             clock.tick(config.FPS)
 
