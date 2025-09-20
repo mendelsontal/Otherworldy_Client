@@ -6,7 +6,7 @@ from client.ui.setting_menu import SettingsMenu
 class Menu:
     def __init__(self, screen):
         self.screen = screen
-        self.options = config.MENU_OPTIONS
+        self.options = ["Start", "Settings", "Exit"]
         self.selected = 0
 
         # Load background
@@ -18,6 +18,7 @@ class Menu:
         self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04)))
 
         # Store rectangles for mouse click and hover detection
+        self.last_mouse_pos = pygame.mouse.get_pos() # Track last mouse pos
         self.option_rects = []
 
     def draw(self):
@@ -55,14 +56,17 @@ class Menu:
 
             # Check mouse position for hover selection
             mouse_pos = pygame.mouse.get_pos()
-            for i, (_, rect) in enumerate(self.option_rects):
-                if rect.collidepoint(mouse_pos):
-                    self.selected = i
-                    break
+            if mouse_pos != self.last_mouse_pos:
+                for i, (_, rect) in enumerate(self.option_rects):
+                    if rect.collidepoint(mouse_pos):
+                        self.selected = i
+                        break
+                self.last_mouse_pos = mouse_pos
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    return "exit"
+                    pygame.quit()
+                    raise SystemExit
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP:
                         self.selected = (self.selected - 1) % len(self.options)

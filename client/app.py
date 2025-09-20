@@ -5,10 +5,15 @@ from client.ui.menu import Menu
 from client.ui.login import Login
 from client.ui.setting_menu import SettingsMenu
 from client.ui.character_selection import CharacterSelection
+from network.client import GameClient
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+    client = GameClient()
+    flags = 0
+    if config.SCREEN_MODE == "Full Screen":
+        flags = pygame.FULLSCREEN
+    screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT), flags)
     pygame.display.set_caption("Game Client")
 
     # Create Login instance once to keep login state
@@ -39,7 +44,7 @@ def main():
         elif choice == "start":
             # If already logged in with characters, go straight to character selection
             if login_screen.logged_in and login_screen.characters:
-                selected = CharacterSelection(screen, login_screen.characters).run()
+                selected = CharacterSelection(screen, login_screen.characters, client).run()
                 if selected in ("cancel", "menu", None):
                     continue  # back to main menu
 
