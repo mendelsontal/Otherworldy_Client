@@ -10,16 +10,22 @@ class CharacterPreview:
         self.scale = scale
         self._cache = {}  # cache loaded frame surfaces by path
 
-    def draw_preview(self, screen, gender=None, hair=None):
+    def draw_preview(self, screen, appearance=None, gear=None, pos=None):
         """
-        Draw assembled character layers centered on the screen.
-        We try to draw (in order): body, feet, legs, torso, head, hair.
-        Each sheet is assumed 3x4; we take the first frame of the 3rd row (row index 2, col 0).
+        Draw assembled character using the character's appearance and gear.
+        - appearance: dict with 'gender' and 'hair'
+        - gear: dict with 'helm', 'armor', 'pants', 'weapon', 'accessory'
         """
-        cx = self.screen_width // 2
-        cy = self.screen_height // 2
+        if not appearance:
+            appearance = {}
+        if not gear:
+            gear = {}
 
-        # helper to blit if exists
+        gender = appearance.get("gender", "Male")
+        hair = appearance.get("hair")
+
+        cx, cy = (self.screen_width // 2, self.screen_height // 2) if pos is None else pos
+
         def try_blit(path):
             if not path:
                 return
@@ -29,35 +35,45 @@ class CharacterPreview:
                 y = cy - frame.get_height() // 2
                 screen.blit(frame, (x, y))
 
-        # Body
-        body_path = _find_case_variants(os.path.join("assets", "images", "Characters", "Body", (gender or "Male"), "Idle.png"))
+        # Draw layers in proper order
+
+        # 1. Body
+        body_path = _find_case_variants(os.path.join("client", "assets", "images", "Characters", "Body", gender, "Idle.png"))
         try_blit(body_path)
 
-        # Clothing: Feet, Legs, Torso (best-effort paths)
-        feet_path = _find_case_variants(os.path.join("assets", "images", "Characters", "Clothing", (gender or "Male"), "Feet", "Shoes 01 - Shoes", "Idle.png"))
-        try_blit(feet_path)
+        # 2. Clothing layers: feet, legs, torso
+        clothing_layers = {
+            "Feet": gear.get("feet", "Shoes 01 - Shoes"),
+            "Legs": gear.get("pants", "Pants 01 - Hose"),
+            "Torso": gear.get("armor", "Shirt 01 - Longsleeve Shirt")
+        }
+        for layer, name in clothing_layers.items():
+            path = _find_case_variants(os.path.join("client", "assets", "images", "Characters", "Clothing", gender, layer, name, "Idle.png"))
+            try_blit(path)
 
-        legs_path = _find_case_variants(os.path.join("assets", "images", "Characters", "Clothing", (gender or "Male"), "Legs", "Pants 01 - Hose", "Idle.png"))
-        try_blit(legs_path)
-
-        torso_path = _find_case_variants(os.path.join("assets", "images", "Characters", "Clothing", (gender or "Male"), "Torso", "Shirt 01 - Longsleeve Shirt", "Idle.png"))
-        try_blit(torso_path)
-
-        # Head
-        head_path = _find_case_variants(os.path.join("assets", "images", "Characters", "Head", (gender or "Male"), "idle.png"))
+        # 3. Head
+        head_path = _find_case_variants(os.path.join("client", "assets", "images", "Characters", "Head", gender, "Idle.png"))
         try_blit(head_path)
 
-        # Hair (folder)
+        # 4. Helm/Accessory if any
+        for layer, key in [("Helm", "helm"), ("Accessory", "accessory")]:
+            item = gear.get(key)
+            if item:
+                path = _find_case_variants(os.path.join("client", "assets", "images", "Characters", "Equipment", layer, item, "Idle.png"))
+                try_blit(path)
+
+        # 5. Hair
         if hair:
-            hair_path = _find_case_variants(os.path.join("assets", "images", "Characters", "Hair", hair, "Idle.png"))
+            hair_path = _find_case_variants(os.path.join("client", "assets", "images", "Characters", "Hair", hair, "Idle.png"))
             try_blit(hair_path)
 
+        # 6. Weapon
+        weapon = gear.get("weapon")
+        if weapon:
+            path = _find_case_variants(os.path.join("client", "assets", "images", "Characters", "Equipment", "Weapon", weapon, "Idle.png"))
+            try_blit(path)
+
     def _load_frame(self, path, cols=3, rows=4, row_idx=2, col_idx=0):
-        """
-        Load (and cache) the specified sheet and return scaled frame:
-        - Take frame at (col_idx, row_idx) from a sheet with cols x rows
-        - Scale it up by self.scale
-        """
         if not path or not os.path.exists(path):
             return None
         key = (path, cols, rows, row_idx, col_idx, self.scale)
@@ -71,7 +87,6 @@ class CharacterPreview:
         try:
             frame = sheet.subsurface(rect).copy()
         except Exception:
-            # if subsurface fails (frame out of bounds), fallback to whole image
             frame = sheet.copy()
 
         scaled = pygame.transform.smoothscale(frame, (fw*self.scale, fh*self.scale))
@@ -79,13 +94,8 @@ class CharacterPreview:
         return scaled
 
 def _find_case_variants(path):
-    """
-    Windows is case-insensitive; on other systems filenames could be different.
-    Try common variants for 'Idle.png' vs 'idle.png'. Return first existing path or None.
-    """
     if os.path.exists(path):
         return path
-    # try lowercase filename
     dirname, fname = os.path.split(path)
     candidates = [fname, fname.lower(), fname.capitalize()]
     for c in candidates:

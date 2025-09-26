@@ -2,6 +2,7 @@ import pygame
 import json
 from client.data import config
 from client.ui.character_creation import CharacterCreation
+from client.ui.character_preview import CharacterPreview
 
 class CharacterSelection:
     def __init__(self, screen, characters, client):
@@ -9,6 +10,7 @@ class CharacterSelection:
         self.characters = characters  # list of dicts (max 6)
         self.client = client
         self.selected_slot = None  # index of chosen slot
+        
 
         # Load images
         self.bg_img = pygame.image.load("client/assets/images/ui/character_selection.png").convert_alpha()
@@ -20,6 +22,8 @@ class CharacterSelection:
 
         # Font proportional to screen height
         self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04)))
+
+        self.preview = CharacterPreview(font=self.font, screen_width=config.SCREEN_WIDTH, screen_height=config.SCREEN_HEIGHT, scale=2)
 
         # Map overlay colors -> field names
         self.color_map = {
@@ -117,6 +121,16 @@ class CharacterSelection:
                 text = "Empty Slot"
             surf = self.font.render(text, True, (255, 255, 255))
             self.screen.blit(surf, (rect.centerx - surf.get_width() // 2, rect.centery - surf.get_height() // 2))
+
+            # Draw preview for selected character
+            if self.selected_slot is not None and self.selected_slot < len(self.characters):
+                char = self.characters[self.selected_slot]
+                self.preview.draw_preview(
+                    self.screen,
+                    appearance=char.get("appearance"),
+                    gear=char.get("gear"),
+                    pos=(int(config.SCREEN_WIDTH * 0.15), config.SCREEN_HEIGHT // 2)
+                )
 
         pygame.display.flip()
 
