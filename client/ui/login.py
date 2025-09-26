@@ -1,6 +1,6 @@
 # client/ui/login.py
 import pygame
-from client import config
+from client.data import config
 import time
 import threading
 import os
@@ -21,11 +21,11 @@ class Login:
         self.server_port = config.SERVER_PORT
 
         # Load window & mask
-        self.base_img = pygame.image.load("client/data/assets/images/login_window.png").convert_alpha()
-        self.mask_img = pygame.image.load("client/data/assets/images/login_window_mask.png").convert()
+        self.base_img = pygame.image.load("client/assets/images/ui/login_window.png").convert_alpha()
+        self.mask_img = pygame.image.load("client/assets/images/ui/login_window_mask.png").convert()
 
         # Load background and scale to screen size
-        self.bg_img = pygame.image.load("client/data/assets/images/menu_bg.png").convert_alpha()
+        self.bg_img = pygame.image.load("client/assets/images/ui/menu_bg.png").convert_alpha()
         self.bg_img = pygame.transform.scale(self.bg_img, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
 
         self.base_w, self.base_h = self.base_img.get_size()
@@ -161,7 +161,7 @@ class Login:
 
     def rescale_ui(self):
         # Rescale background
-        self.bg_img = pygame.image.load("client/data/assets/images/menu_bg.png").convert_alpha()
+        self.bg_img = pygame.image.load("client/assets/images/ui/menu_bg.png").convert_alpha()
         self.bg_img = pygame.transform.scale(self.bg_img, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
 
         # Recalculate scaling for window and mask

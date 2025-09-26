@@ -1,6 +1,6 @@
 import pygame
 import json
-from client import config
+from client.data import config
 from client.ui.character_creation import CharacterCreation
 
 class CharacterSelection:
@@ -11,8 +11,8 @@ class CharacterSelection:
         self.selected_slot = None  # index of chosen slot
 
         # Load images
-        self.bg_img = pygame.image.load("client/data/assets/images/character_selection.png").convert_alpha()
-        self.mask_img = pygame.image.load("client/data/assets/images/character_selection_mask.png").convert()
+        self.bg_img = pygame.image.load("client/assets/images/ui/character_selection.png").convert_alpha()
+        self.mask_img = pygame.image.load("client/assets/images/ui/character_selection_mask.png").convert()
 
         # Scale images to screen size
         self.bg_img = pygame.transform.scale(self.bg_img, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))

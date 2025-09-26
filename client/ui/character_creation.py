@@ -1,7 +1,7 @@
 import pygame
 import re
 import time
-from client import config
+from client.data import config
 
 class CharacterCreation:
     NAME_REGEX = re.compile(r'^[A-Za-z0-9]{1,12}$')  # letters & numbers only, max 12

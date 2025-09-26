@@ -1,5 +1,5 @@
 import pygame
-from client import config
+from client.data import config
 from client.ui.login import Login
 from client.ui.setting_menu import SettingsMenu
 
@@ -10,7 +10,7 @@ class Menu:
         self.selected = 0
 
         # Load background
-        self.bg_img_orig = pygame.image.load("client/data/assets/images/menu_bg.png").convert_alpha()
+        self.bg_img_orig = pygame.image.load("client/assets/images/ui/menu_bg.png").convert_alpha()
         self.bg_img = pygame.transform.scale(self.bg_img_orig, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         self.last_size = (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 

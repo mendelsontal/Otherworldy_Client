@@ -4,9 +4,10 @@ import threading
 import json
 import queue
 import time
+from client.data import config
 
 class GameClient:
-    def __init__(self, host="127.0.0.1", port=5000):
+    def __init__(self, host=config.SERVER_IP, port=5000):
         self.host = host
         self.port = port
         self.sock = None

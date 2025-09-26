@@ -1,6 +1,6 @@
 # app.py
 import pygame
-from client import config
+from client.data import config
 from client.ui.menu import Menu
 from client.ui.login import Login
 from client.ui.setting_menu import SettingsMenu

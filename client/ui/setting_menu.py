@@ -1,17 +1,17 @@
 import os
 import pygame
-from client import config
+from client.data import config
 
 class SettingsMenu:
     def __init__(self, screen):
         self.screen = screen
 
         # Load background (keep original for scaling)
-        self.bg_img_orig = pygame.image.load("client/data/assets/images/settings_bg.png").convert()
+        self.bg_img_orig = pygame.image.load("client/assets/images/ui/settings_bg.png").convert()
         self.bg_img = pygame.transform.scale(self.bg_img_orig, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
 
         # Font proportional to screen height
-        font_path = "client/data/assets/fonts/cinzel.decorative-black.ttf"
+        font_path = "client/assets/fonts/cinzel.decorative-black.ttf"
         self.font = pygame.font.Font(font_path, max(20, int(config.SCREEN_HEIGHT * 0.04)))
 
         # Main options
