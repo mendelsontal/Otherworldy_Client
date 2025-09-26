@@ -12,7 +12,7 @@ class Login:
     def __init__(self, screen, client: GameClient):
         self.screen = screen
         self.client = client
-        self.client.connect()
+        self.client.on_message = self._on_server_message
 
         self.logged_in = False
         self.characters = []
@@ -70,14 +70,9 @@ class Login:
         self.last_blink = time.time()
 
         # Networking client and synchronization primitives
-        self.client = GameClient(self.server_ip, int(self.server_port))
         self.server_event = threading.Event()
         self.server_action = None
         self.server_payload = None
-
-        # assign callback
-        self.client.on_message = self._on_server_message
-        self.client.connect()
 
     # ---------------- Persistence Methods ----------------
     def _save_username_to_file(self, username):

@@ -105,7 +105,7 @@ class SettingsMenu:
     def save_config(self):
         """Save current resolution to config.py."""
         try:
-            config_path = "client/config.py"
+            config_path = "client/data/config.py"
             with open(config_path, "r") as f:
                 lines = f.readlines()
 
@@ -146,7 +146,7 @@ class SettingsMenu:
         self.bg_img = pygame.transform.scale(self.bg_img_orig, (new_width, new_height))
 
         # Update font size
-        font_path = "client/data/assets/fonts/cinzel.decorative-black.ttf"
+        font_path = "client/assets/fonts/cinzel.decorative-black.ttf"
         self.font = pygame.font.Font(font_path, max(20, int(config.SCREEN_HEIGHT * 0.04)))
 
         print(f"Applied new resolution: {new_width} x {new_height}")

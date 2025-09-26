@@ -7,7 +7,8 @@ import time
 from client.data import config
 
 class GameClient:
-    def __init__(self, host=config.SERVER_IP, port=5000):
+    def __init__(self, host=config.SERVER_IP, port=config.SERVER_PORT):
+        print("[DEBUG] GameClient __init__ called")
         self.host = host
         self.port = port
         self.sock = None
@@ -128,12 +129,12 @@ class GameClient:
     # ---------------- Login ----------------
     def login(self, username: str, password: str):
         self._last_login = (username, password)
-        self.connect()  # ensures connection
+        #self.connect()  # ensures connection
         self.send_json({
             "action": "login",
             "data": {"username": username, "password": password}
         })
-        # request(...) can still be used for blocking login if needed
+        
         return self.request(expect_action="character_list")
 
     # ---------------- Request ----------------

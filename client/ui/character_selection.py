@@ -125,11 +125,24 @@ class CharacterSelection:
             # Draw preview for selected character
             if self.selected_slot is not None and self.selected_slot < len(self.characters):
                 char = self.characters[self.selected_slot]
+
+                # --- Draw name above the preview ---
+                name = char.get("name", "Unknown")
+                font = pygame.font.SysFont(None, 32)  # or reuse a class-level font if you already have one
+                name_surf = font.render(name, True, (255, 255, 255))
+                
+                # Position name above the preview
+                preview_x = int(config.SCREEN_WIDTH * 0.3)
+                preview_y = config.SCREEN_HEIGHT // 4.5
+                name_x = preview_x - name_surf.get_width() // 2
+                name_y = preview_y - 40  # 40px above the preview
+                self.screen.blit(name_surf, (name_x, name_y))
+
                 self.preview.draw_preview(
                     self.screen,
                     appearance=char.get("appearance"),
                     gear=char.get("gear"),
-                    pos=(int(config.SCREEN_WIDTH * 0.15), config.SCREEN_HEIGHT // 2)
+                    pos=(int(config.SCREEN_WIDTH * 0.3), config.SCREEN_HEIGHT // 4)
                 )
 
         pygame.display.flip()

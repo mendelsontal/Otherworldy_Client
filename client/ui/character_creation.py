@@ -105,7 +105,7 @@ class CharacterCreation:
                 if original_callback:
                     original_callback(message)
 
-        self.client.on_message = temp_callback   # <-- you forgot this
+        self.client.on_message = temp_callback
 
         while running:
             self.draw()
@@ -166,7 +166,7 @@ class CharacterCreation:
                                     "gender": self.gender_options[self.gender_index],
                                     "hair": self.hair_folders[self.hair_index] if self.hair_folders else None
                                 }
-                                print("Creating character:", data)   # <--- add this
+                                print("Creating character:", data)
                                 self.client.send_json({
                                     "action": "create_character",
                                     "data": data
