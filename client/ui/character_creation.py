@@ -72,7 +72,11 @@ class CharacterCreation:
             self.screen.blit(title_surf, (50, 40))
 
             current_hair = self.hair_folders[self.hair_index] if self.hair_folders else None
-            self.preview.draw_preview(self.screen, gender=self.gender_options[self.gender_index], hair=current_hair)
+            appearance = {
+                "gender": self.gender_options[self.gender_index],
+                "hair": current_hair
+            }
+            self.preview.draw_preview(self.screen, appearance=appearance)
 
             if current_hair:
                 hair_text = self.font.render(current_hair, True, (200,200,200))
