@@ -1,6 +1,7 @@
 import pygame
 import re
 import time
+from .character_preview import CharacterPreview
 from client.data import config
 
 class CharacterCreation:
