@@ -9,8 +9,13 @@ from client.ui.character_selection import CharacterSelection
 from client.ui.character_creation import CharacterCreation
 
 class Login:
-    def __init__(self, screen):
+    def __init__(self, screen, client: GameClient):
         self.screen = screen
+        self.client = client
+        self.client.connect()
+
+        self.logged_in = False
+        self.characters = []
         # Load server ip & port
         self.server_ip = config.SERVER_IP
         self.server_port = config.SERVER_PORT
@@ -177,6 +182,39 @@ class Login:
         # Update font
         self.font = pygame.font.SysFont(config.FONT_NAME, 24)
 
+    def login(self, username, password):
+        """Send login request and wait for server response."""
+        if not username or not password:
+            print("[!] Username or password empty")
+            return False
+
+        if not self.client.connected:
+            self.client.connect()
+
+        resp = self.client.request(
+            {"action": "login", "data": {"username": username, "password": password}},
+            expect_action="character_list",
+            timeout=5
+        )
+
+        if resp is None:
+            print("[!] Login request timed out")
+            return False
+
+        if resp.get("action") == "character_list" and "user" in resp:
+            self.logged_in = True
+            self.username_text = username
+            self.characters = resp.get("characters", [])
+
+            # Save username for next session
+            self._save_username_to_file(username)
+            print(f"[+] Logged in as {username}, {len(self.characters)} characters loaded")
+            return True
+        else:
+            reason = resp.get("reason", "Unknown error")
+            print(f"[!] Login failed: {reason}")
+            self.logged_in = False
+            return False
 
     # ---------------- Main Loop ----------------
     def run(self):
@@ -207,7 +245,7 @@ class Login:
                     reason = payload.get("reason", "Unknown")
                     print("Login failed:", reason)
                 elif action == "character_list":
-                    self.characters = payload.get("characters", [])  # <--- assign here
+                    self.characters = payload.get("characters", [])
                     self.logged_in = True
 
                     # Save username to disk for future sessions

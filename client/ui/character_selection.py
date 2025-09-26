@@ -181,12 +181,15 @@ class CharacterSelection:
         elif field == "delete_btn":
             if self.selected_slot is not None and self.selected_slot < len(self.characters):
                 char = self.characters[self.selected_slot]
-                confirm = self._confirm_delete(char["name"])  # optional popup confirm
+                confirm = self._confirm_delete(char["name"])
                 if confirm:
-                    self.client.delete_character(char["id"])  # call server
-                    self.characters.pop(self.selected_slot)
-                    self.selected_slot = None
+                    response = self.client.delete_character(char["id"])
+                    if response:
+                        print(f"Deleted {char['name']} confirmed by server")
+                        self.characters.pop(self.selected_slot)
+                        self.selected_slot = None
             return None
+
 
     def run(self):
         clock = pygame.time.Clock()
@@ -199,14 +202,9 @@ class CharacterSelection:
                     if event.key == pygame.K_DELETE and self.selected_slot is not None:
                         if self.selected_slot < len(self.characters):
                             char = self.characters[self.selected_slot]
-                            self.client.send(json.dumps({
-                                "action": "delete_character",
-                                "char_id": char["id"]
-                            }))
-                            # Wait for server response (simplified)
-                            response = self.client.recv()
-                            if response.get("action") == "delete_character_ok":
-                                print(f"Deleted character {char['name']}")
+                            response = self.client.delete_character(char["id"])
+                            if response:
+                                print(f"Deleted character {char['name']} confirmed by server")
                                 del self.characters[self.selected_slot]
                                 self.selected_slot = None
                     if event.key in (pygame.K_DOWN, pygame.K_TAB):

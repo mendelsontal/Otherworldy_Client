@@ -9,19 +9,22 @@ from network.client import GameClient
 
 def main():
     pygame.init()
+
+    # --- CREATE ONE PERSISTENT CLIENT ---
     client = GameClient()
+    client.connect()  # connect once at startup
+
     flags = 0
     if config.SCREEN_MODE == "Full Screen":
         flags = pygame.FULLSCREEN
     screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT), flags)
     pygame.display.set_caption("Game Client")
 
-    # Create Login instance once to keep login state
-    login_screen = Login(screen)
+    # Pass the persistent client to Login
+    login_screen = Login(screen, client)
 
     running = True
     while running:
-        # Show main menu
         menu = Menu(screen)
         choice = menu.run()  # returns "start", "settings", "exit"
 
@@ -37,39 +40,42 @@ def main():
 
             new_size = (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
             if new_size != old_size:
-                screen = pygame.display.set_mode(new_size)
-                login_screen.screen = screen
+                flags = 0
+                if config.SCREEN_MODE == "Full Screen":
+                    flags = pygame.FULLSCREEN
+                screen = pygame.display.set_mode(new_size, flags)
 
+                # Update login screen’s reference + rescale UI
+                login_screen.screen = screen
+                login_screen.rescale_ui()
 
         elif choice == "start":
             # If already logged in with characters, go straight to character selection
             if login_screen.logged_in and login_screen.characters:
                 selected = CharacterSelection(screen, login_screen.characters, client).run()
                 if selected in ("cancel", "menu", None):
-                    continue  # back to main menu
+                    continue
 
                 if isinstance(selected, dict):
                     print("Player picked:", selected)
                     running = False
                     break
                 else:
-                    # Cancelled character selection -> back to menu
                     continue
 
             # Otherwise, show login screen
-            result = login_screen.run()  # returns {"selected_character": ...} or None
+            result = login_screen.run()
 
             if login_screen.logged_in:
                 print("User is logged in.")
             elif result is None:
                 print("User cancelled or closed the login screen.")
-                continue  # back to main menu
+                continue
 
             # Check if character was selected
             if result and isinstance(result, dict) and result.get("selected_character"):
                 selected = result["selected_character"]
                 print("Player picked:", selected)
-                # TODO: launch actual game world
                 running = False
                 break
 
