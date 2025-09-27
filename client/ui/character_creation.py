@@ -15,6 +15,10 @@ class CharacterCreation:
         return sorted([d for d in os.listdir(hair_root) if os.path.isdir(os.path.join(hair_root, d))])
 
     def __init__(self, screen, client):
+        self.bg_img_orig = pygame.image.load("client/assets/images/ui/character_creation_bg.png").convert_alpha()
+        self.bg_img = pygame.transform.scale(self.bg_img_orig, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+        self.last_size = (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
         self.screen = screen
         self.client = client
         self.font = pygame.font.SysFont(None, 32)
@@ -37,7 +41,15 @@ class CharacterCreation:
         self.created_character = None
 
     def draw(self):
-        self.screen.fill((0,0,0))
+        # Draw background scaled to current screen size
+        current_size = (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+        if current_size != self.last_size:
+            self.bg_img = pygame.transform.scale(self.bg_img_orig, current_size)
+            self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04)))
+            self.last_size = current_size
+
+            # Draw background scaled to current screen size
+        self.screen.blit(self.bg_img, (0, 0))
 
         if self.state == "name":
             title_surf = self.font.render("Enter Character Name:", True, (255,255,255))

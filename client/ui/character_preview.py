@@ -1,14 +1,16 @@
 # src/character_preview.py
 import pygame
 import os
+from client.data import config
 
 class CharacterPreview:
-    def __init__(self, font, screen_width, screen_height, scale=3):
-        self.font = font
+    def __init__(self, font, screen_width, screen_height, scale=4):
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.scale = scale
         self._cache = {}  # cache loaded frame surfaces by path
+        
+        self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04))) # Font size proportional to screen height
 
     def draw_preview(self, screen, appearance=None, gear=None, pos=None):
         """
@@ -24,7 +26,7 @@ class CharacterPreview:
         gender = appearance.get("gender", "Male")
         hair = appearance.get("hair")
 
-        cx, cy = (self.screen_width // 2, self.screen_height // 2) if pos is None else pos
+        cx, cy = (self.screen_width // 2, self.screen_height // 1.3) if pos is None else pos
 
         def try_blit(path):
             if not path:

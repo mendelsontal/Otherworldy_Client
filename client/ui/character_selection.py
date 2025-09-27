@@ -15,15 +15,29 @@ class CharacterSelection:
         # Load images
         self.bg_img = pygame.image.load("client/assets/images/ui/character_selection.png").convert_alpha()
         self.mask_img = pygame.image.load("client/assets/images/ui/character_selection_mask.png").convert()
+        self.stat_bg_img = pygame.image.load("client/assets/images/ui/character_stats_dark_bg.png").convert_alpha()
 
         # Scale images to screen size
+        orig_w, orig_h = self.stat_bg_img.get_size() # Get original size
+        
+        # Desired max size (e.g. 40% of screen width, 60% of screen height)
+        max_w = int(config.SCREEN_WIDTH * 0.4)
+        max_h = int(config.SCREEN_HEIGHT * 0.7)
+
+        # Scale while keeping aspect ratio
+        scale = min(max_w / orig_w, max_h / orig_h)
+        self.stat_w, self.stat_h = int(orig_w * scale), int(orig_h * scale)
+        self.stat_bg_img = pygame.transform.smoothscale(self.stat_bg_img, (self.stat_w, self.stat_h))
+
+        # Background + mask
         self.bg_img = pygame.transform.scale(self.bg_img, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         self.mask_img = pygame.transform.scale(self.mask_img, (config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+        
 
         # Font proportional to screen height
         self.font = pygame.font.SysFont(config.FONT_NAME, max(20, int(config.SCREEN_HEIGHT * 0.04)))
 
-        self.preview = CharacterPreview(font=self.font, screen_width=config.SCREEN_WIDTH, screen_height=config.SCREEN_HEIGHT, scale=2)
+        self.preview = CharacterPreview(font=self.font, screen_width=config.SCREEN_WIDTH, screen_height=config.SCREEN_HEIGHT, scale=1.5)
 
         # Map overlay colors -> field names
         self.color_map = {
@@ -105,6 +119,13 @@ class CharacterSelection:
         self.screen.blit(self.bg_img, (0, 0))
         self.draw_selected_slot()
         self.draw_highlight(self.active_field)
+        
+        if self.selected_slot is not None and self.selected_slot < len(self.characters):
+            char = self.characters[self.selected_slot]
+            # Draw stats window centered
+            x = (config.SCREEN_WIDTH - self.stat_w) // 3.8
+            y = (config.SCREEN_HEIGHT - self.stat_h) // 3.2
+            self.screen.blit(self.stat_bg_img, (x, y))
 
         # Draw characters inside slots
         for i, mask in enumerate(self.masks["slots"]):
@@ -116,7 +137,7 @@ class CharacterSelection:
             rect = rects[0]
             if i < len(self.characters):
                 char = self.characters[i]
-                text = f"{char['name']} (Lv {char['stats'].get('Level', 0)})"
+                text = f"{char['name']}"
             else:
                 text = "Empty Slot"
             surf = self.font.render(text, True, (255, 255, 255))
@@ -128,21 +149,24 @@ class CharacterSelection:
 
                 # --- Draw name above the preview ---
                 name = char.get("name", "Unknown")
-                font = pygame.font.SysFont(None, 32)  # or reuse a class-level font if you already have one
-                name_surf = font.render(name, True, (255, 255, 255))
+                name_surf = self.font.render(name, True, (255, 255, 255))
+                character_level = f"(Level {char['stats'].get('Level', 0)})"
+                character_level_surf = self.font.render(character_level, True, (255, 255, 255))
                 
                 # Position name above the preview
-                preview_x = int(config.SCREEN_WIDTH * 0.3)
-                preview_y = config.SCREEN_HEIGHT // 4.5
-                name_x = preview_x - name_surf.get_width() // 2
-                name_y = preview_y - 40  # 40px above the preview
-                self.screen.blit(name_surf, (name_x, name_y))
+                name_x = x + (self.stat_w - name_surf.get_width()) // 2  # center above stats
+                name_y = y - name_surf.get_height() - 5  # 5px above the stats window
+                #self.screen.blit(name_surf, (name_x, name_y))
+
+                # Align preview with stats window
+                preview_x = x + self.stat_w // 2  # center horizontally
+                preview_y = y + int(self.stat_h * 0.76)
 
                 self.preview.draw_preview(
                     self.screen,
                     appearance=char.get("appearance"),
                     gear=char.get("gear"),
-                    pos=(int(config.SCREEN_WIDTH * 0.3), config.SCREEN_HEIGHT // 4)
+                    pos=(preview_x, preview_y)
                 )
 
         pygame.display.flip()
@@ -160,7 +184,7 @@ class CharacterSelection:
     
     def _confirm_delete(self, name):
         font = pygame.font.SysFont(config.FONT_NAME, 24)
-        text = font.render(f"Delete {name}? Y/N", True, (255, 0, 0))
+        text = self.font.render(f"Delete {name}? Y/N", True, (255, 0, 0))
         self.screen.blit(text, (config.SCREEN_WIDTH//2 - text.get_width()//2,
                                 config.SCREEN_HEIGHT//2 - text.get_height()//2))
         pygame.display.flip()
